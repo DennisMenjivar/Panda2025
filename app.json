@@ -1,4 +1,32 @@
 {
   "name": "Panda",
-  "slug": "Panda"
+  "slug": "Panda",
+  "android": {
+    "package": "com.dnsmenjivar.Panda"
+  },
+  "ios": {
+    "bundleIdentifier": "com.dnsmenjivar.Panda"
+  },
+  "expo": {
+    "android": {
+      "plugins": [
+        [
+          "expo-system-ui",
+          {
+            "edgeToEdge": true
+          }
+        ],
+        [
+          "expo-system-ui",
+          {
+            "edgeToEdge": true
+          }
+        ]
+      ],
+      "package": "com.dnsmenjivar.panda2025"
+    },
+    "ios": {
+      "bundleIdentifier": "com.dnsmenjivar.panda2025"
+    }
+  }
 }
