@@ -3,25 +3,23 @@ import {
   Text,
   RefreshControl,
   Dimensions,
-  StyleSheet,
   TouchableOpacity,
 } from 'react-native';
 import { useEffect, useState } from 'react';
-import Toast, { BaseToast, ErrorToast } from 'react-native-toast-message';
+import Toast from 'react-native-toast-message';
 import { ScrollView } from 'react-native-gesture-handler';
 
 import {
   createTables,
   insertDiariaTicketIfNotExists,
-  getDiariaTickets,
   insertDetalleAndUpdateTicket,
   getTotalLempirasFromDraftTicket,
 } from '../database/DiariaModel';
+import { message, styles, toastConfig } from '../constants';
 
 const screenHeight = Dimensions.get('window').height;
 
 export default function HomeScreen({ navigation }) {
-  const [entries, setEntries] = useState([]);
   const [total_lempiras, setTotal_lempiras] = useState(0);
   const [refreshing, setRefreshing] = useState(false);
   // const [principalText, setPrincipalText] = useState(0);
@@ -50,16 +48,17 @@ export default function HomeScreen({ navigation }) {
     await createTables();
     const id = await insertDiariaTicketIfNotExists();
     const tl = await getTotalLempirasFromDraftTicket();
+
     if (tl) setTotal_lempiras(tl);
     if (id)
-      Toast.show({
-        type: 'success', // 'success' | 'error' | 'info'
-        text1: 'Ticket: #' + id,
-        position: 'top', // or 'top'
-        visibilityTime: 1200,
-        autoHide: true,
-        topOffset: 15,
-      });
+      message(
+        'success',
+        'Ticket: #' + id,
+        'top', // or 'top'
+        1200,
+        true,
+        15
+      );
   };
 
   useEffect(() => {
@@ -104,7 +103,7 @@ export default function HomeScreen({ navigation }) {
           )
         );
       } else if (option === 'Lempiras') {
-        // setNumberSelected();
+        if (numberSelected.lempiras <= 0) return;
         const numberTemp =
           numberSelected.number <= 9
             ? '0' + String(numberSelected.number)
@@ -118,20 +117,17 @@ export default function HomeScreen({ navigation }) {
         if (tl) setTotal_lempiras(tl);
         await onRefresh();
         if (temp)
-          Toast.show({
-            type: 'success', // 'success' | 'error' | 'info'
-            text1: 'Agregado',
-            text2:
-              'Número ' +
+          message(
+            'success',
+            'Agregado',
+            'Número ' +
               numberTemp +
               ' con L. ' +
               numberSelected.lempiras.toLocaleString() +
               '.00',
-            position: 'top', // or 'top'
-            visibilityTime: 1300,
-            autoHide: true,
-            topOffset: 15,
-          });
+            'top',
+            1300
+          );
         setPrincipalButtons((prev) =>
           prev.map((button) =>
             button.value === -2 ? { ...button, name: '>' } : button
@@ -154,15 +150,13 @@ export default function HomeScreen({ navigation }) {
             lempiras: parseInt(prev.lempiras.toString() + btn.name), //(prev.lempiras += btn.name), // <-- your new value here
           }));
         } else {
-          Toast.show({
-            type: 'error', // 'success' | 'error' | 'info'
-            text1: 'Error',
-            text2: 'No puede ingresar más de 6 digitos.',
-            position: 'top', // or 'top'
-            visibilityTime: 1300,
-            autoHide: true,
-            topOffset: 15,
-          });
+          message(
+            'error',
+            'Error',
+            'No puede ingresar más de 6 digitos.',
+            'top',
+            1300
+          );
         }
       }
     }
@@ -178,41 +172,26 @@ export default function HomeScreen({ navigation }) {
         }
       >
         {/* TOTAL & Disponible */}
-        <View
-          style={{
-            flexDirection: 'row',
-            justifyContent: 'space-between',
-            paddingHorizontal: 10,
-            width: '100%',
-            position: 'absolute',
-          }}
-        >
+        <View style={styles.top_labels_view}>
           {/* TOTAL L TICKET */}
-          <Text
-            style={{
-              textAlign: 'left',
-              color: '#488aff',
-              padding: 10,
-              fontSize: 18,
-            }}
-          >
+          <Text style={styles.total_amount}>
             L. {total_lempiras.toFixed(2)}
           </Text>
           {/* AVAILABLE */}
           {option === 'Lempiras' && (
-            <Text
-              style={{
-                textAlign: 'left',
-                color: 'red',
-                padding: 10,
-                fontSize: 18,
-              }}
-            >
+            <Text style={styles.available_per_number}>
               Disp. {totalTicket.toFixed(2)}
             </Text>
           )}
         </View>
-        <View style={styles.displaySection}>
+        <View
+          style={{
+            height: screenHeight * 0.3,
+            maxWidth: '100%',
+            justifyContent: 'center',
+            alignItems: 'center',
+          }}
+        >
           {option === 'Lempiras' && (
             <Text style={styles.underlineNumber}>
               {numberSelected.number <= 9 && <Text>0</Text>}
@@ -239,7 +218,14 @@ export default function HomeScreen({ navigation }) {
           </Text>
         </View>
         {/* NUMBERS */}
-        <View style={styles.buttonGrid}>
+        <View
+          style={{
+            flexDirection: 'row',
+            flexWrap: 'wrap',
+            height: screenHeight * 0.55,
+            backgroundColor: 'transparent',
+          }}
+        >
           {principalButtons.map((b, index) => (
             <TouchableOpacity
               key={index}
@@ -255,120 +241,3 @@ export default function HomeScreen({ navigation }) {
     </>
   );
 }
-
-const toastConfig = {
-  success: (props) => (
-    <BaseToast
-      {...props}
-      style={styles.successToast}
-      text1Style={styles.text1}
-      text2Style={styles.text2}
-    />
-  ),
-  error: (props) => (
-    <ErrorToast
-      {...props}
-      style={styles.errorToast}
-      text1Style={styles.text1}
-      text2Style={styles.text2}
-    />
-  ),
-  info: (props) => (
-    <BaseToast
-      {...props}
-      style={styles.infoToast}
-      text1Style={styles.text1}
-      text2Style={styles.text2}
-    />
-  ),
-};
-
-const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    backgroundColor: 'white',
-  },
-  scrollContent: {
-    padding: 0,
-    margin: 0,
-  },
-  totalTicket: {
-    textAlign: 'left',
-    color: '#488aff',
-    padding: 10,
-    fontSize: 18,
-  },
-  displaySection: {
-    height: screenHeight * 0.3,
-    maxWidth: '100%',
-    justifyContent: 'center',
-    alignItems: 'center',
-  },
-  underlineNumber: {
-    textAlign: 'center',
-    color: 'gray',
-    textDecorationLine: 'underline',
-    fontSize: 30,
-  },
-  mainNumber: {
-    textAlign: 'center',
-    color: 'black',
-    fontSize: 100,
-  },
-  optionNumber: {
-    textAlign: 'center',
-    color: 'black',
-    fontSize: 16,
-  },
-  optionLempiras: {
-    textAlign: 'center',
-    color: '#488aff',
-    fontSize: 16,
-  },
-  buttonGrid: {
-    flexDirection: 'row',
-    flexWrap: 'wrap',
-    height: screenHeight * 0.55,
-    backgroundColor: 'transparent',
-  },
-  buttonCell: {
-    width: '33.33%',
-    height: '22%',
-    justifyContent: 'center',
-    alignItems: 'center',
-    borderWidth: 0.9,
-    borderColor: '#eee',
-  },
-  buttonText: {
-    color: 'black',
-    fontSize: 28,
-  },
-
-  // TOAST
-  successToast: {
-    borderLeftColor: 'green',
-    backgroundColor: '#e6ffed',
-    width: '95%',
-  },
-  errorToast: {
-    borderLeftColor: 'red',
-    backgroundColor: '#ffe6e6',
-    width: '95%',
-  },
-  infoToast: {
-    borderLeftColor: '#3b82f6',
-    backgroundColor: '#e6f0ff',
-    width: '95%',
-  },
-  text1: {
-    fontSize: 20,
-    fontWeight: '600',
-    color: '#111',
-  },
-  text2: {
-    fontSize: 17,
-    color: '#333',
-  },
-});
-
-// Project successfully linked (ID: 0fa312af-2f13-4658-898d-caf2b157ce76) (modified app.json)

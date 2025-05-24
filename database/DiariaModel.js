@@ -23,6 +23,15 @@ export const createTables = async () => {
         FOREIGN KEY (ticket_id) REFERENCES diaria_ticket(id)
       );
     `);
+  await db.executeSql(`
+      CREATE TABLE IF NOT EXISTS diaria_limits (
+        id INTEGER PRIMARY KEY AUTOINCREMENT, 
+        number INTEGER,
+        lempiras INTEGER,
+        spent INTEGER,
+        updated_at TEXT
+      );
+    `);
   console.log('Tables created');
 };
 
@@ -129,6 +138,84 @@ export const getTotalLempirasFromDraftTicket = async () => {
   } catch (error) {
     console.error('❌ Error getting total_lempiras:', error);
     return null;
+  }
+};
+
+// INSERT DETAULT PEDAZOS
+export const insertDefaultPedazos = async () => {
+  const db = await getDBConnection();
+  const updatedAt = new Date().toISOString();
+
+  try {
+    // Step 1: Check if any rows already exist
+    const [result] = await db.executeSql(
+      `SELECT COUNT(*) as count FROM diaria_limits`
+    );
+    const count = result.rows.item(0).count;
+
+    if (count > 0) {
+      console.log('⚠️ Pedazos already initialized. Skipping insert.');
+      return -2;
+    }
+
+    // Step 2: Insert values only if table is empty
+    for (let i = 0; i < 100; i++) {
+      await db.transaction(async (tx) => {
+        await tx.executeSql(
+          `INSERT INTO diaria_limits (number, lempiras, spent, updated_at) VALUES (?, ?, ?, ?)`,
+          [i, 200, 0, updatedAt]
+        );
+      });
+    }
+
+    console.log(
+      '✅ Successfully inserted numbers 0 to 99 with 200 pedazos each'
+    );
+    return 1;
+  } catch (error) {
+    console.error('❌ Error inserting pedazos:', error);
+    return 0;
+  }
+};
+
+// GET ALL PEDAZOS
+export const getAllPedazos = async () => {
+  const db = await getDBConnection();
+  try {
+    const [result] = await db.executeSql(
+      `SELECT * FROM diaria_limits ORDER BY number ASC`
+    );
+    const items = [];
+
+    for (let i = 0; i < result.rows.length; i++) {
+      items.push(result.rows.item(i));
+    }
+
+    console.log(items);
+
+    return items;
+  } catch (error) {
+    console.error('❌ Error fetching pedazos:', error);
+    return [];
+  }
+};
+
+// UPDATES LEMPIRAS BY RANGE
+export const updateLempirasByRange = async (start, end, newAmount) => {
+  const db = await getDBConnection();
+  try {
+    await db.executeSql(
+      `UPDATE diaria_limits SET lempiras = ?, updated_at = ? WHERE number BETWEEN ? AND ?`,
+      [newAmount, new Date().toISOString(), start, end]
+    );
+
+    console.log(
+      `✅ Updated lempiras to Lps. ${newAmount} for numbers ${start} to ${end}`
+    );
+    return true;
+  } catch (error) {
+    console.error('❌ Error updating lempiras by range:', error);
+    return false;
   }
 };
 

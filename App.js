@@ -1,6 +1,7 @@
 import { createDrawerNavigator } from '@react-navigation/drawer';
 import { NavigationContainer } from '@react-navigation/native';
 import HomeScreen from '../Panda/_screens/Home';
+import ControlLimites from '../Panda/_screens/ControlLimites';
 import { Button, View } from 'react-native';
 import Icon from 'react-native-vector-icons/Ionicons';
 
@@ -109,7 +110,7 @@ export default function App() {
             ),
           }}
           name="Control limites"
-          component={NotificationsScreen}
+          component={ControlLimites}
         />
         <Drawer.Screen
           options={{
