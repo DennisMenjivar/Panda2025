@@ -9,44 +9,20 @@ import {
 import { useEffect, useState } from 'react';
 import Toast, { BaseToast, ErrorToast } from 'react-native-toast-message';
 import { ScrollView } from 'react-native-gesture-handler';
-import { getDBConnection } from '../database/db';
+
 import {
   createTables,
-  insertDiariaTicket,
+  insertDiariaTicketIfNotExists,
   getDiariaTickets,
+  insertDetalleAndUpdateTicket,
+  getTotalLempirasFromDraftTicket,
 } from '../database/DiariaModel';
 
 const screenHeight = Dimensions.get('window').height;
 
 export default function HomeScreen({ navigation }) {
   const [entries, setEntries] = useState([]);
-
-  const loadData = async () => {
-    const db = await getDBConnection();
-    const message = await createTables(db);
-    const items = await getDiariaTickets(db);
-    setEntries(items);
-  };
-
-  const addEntry = async () => {
-    const db = await getDBConnection();
-    const id = await insertDiariaTicket(db, 100);
-    Toast.show({
-      type: 'success', // 'success' | 'error' | 'info'
-      text1: 'Agregado',
-      text2: 'ID: ' + id + '!',
-      position: 'top', // or 'top'
-      visibilityTime: 1300,
-      autoHide: true,
-      topOffset: 15,
-    });
-    // loadData();
-  };
-
-  useEffect(() => {
-    loadData();
-  }, []);
-
+  const [total_lempiras, setTotal_lempiras] = useState(0);
   const [refreshing, setRefreshing] = useState(false);
   // const [principalText, setPrincipalText] = useState(0);
   const [totalTicket, setTotalTicket] = useState(0);
@@ -70,13 +46,32 @@ export default function HomeScreen({ navigation }) {
     { value: -2, name: '>' },
   ]);
 
-  const onRefresh = () => {
+  const loadData = async () => {
+    await createTables();
+    const id = await insertDiariaTicketIfNotExists();
+    const tl = await getTotalLempirasFromDraftTicket();
+    if (tl) setTotal_lempiras(tl);
+    if (id)
+      Toast.show({
+        type: 'success', // 'success' | 'error' | 'info'
+        text1: 'Ticket: #' + id,
+        position: 'top', // or 'top'
+        visibilityTime: 1200,
+        autoHide: true,
+        topOffset: 15,
+      });
+  };
+
+  useEffect(() => {
+    loadData();
+  }, []);
+
+  const onRefresh = async () => {
     setRefreshing(true);
     setNumberSelected({
       number: 0,
       lempiras: 0,
     });
-    addEntry();
     setOption('Numero');
     setPrincipalButtons((prev) =>
       prev.map((button) =>
@@ -86,7 +81,7 @@ export default function HomeScreen({ navigation }) {
     setRefreshing(false);
   };
 
-  const handleClick = (btn) => {
+  const handleClick = async (btn) => {
     if (btn.value === -1) {
       if (option === 'Numero') {
         setNumberSelected((prev) => ({
@@ -114,20 +109,29 @@ export default function HomeScreen({ navigation }) {
           numberSelected.number <= 9
             ? '0' + String(numberSelected.number)
             : String(numberSelected.number);
-        Toast.show({
-          type: 'success', // 'success' | 'error' | 'info'
-          text1: 'Agregado',
-          text2:
-            'Número ' +
-            numberTemp +
-            ' con L' +
-            numberSelected.lempiras.toLocaleString() +
-            '!',
-          position: 'top', // or 'top'
-          visibilityTime: 1300,
-          autoHide: true,
-          topOffset: 15,
-        });
+
+        const temp = await insertDetalleAndUpdateTicket(
+          numberSelected.number,
+          numberSelected.lempiras
+        );
+        const tl = await getTotalLempirasFromDraftTicket();
+        if (tl) setTotal_lempiras(tl);
+        await onRefresh();
+        if (temp)
+          Toast.show({
+            type: 'success', // 'success' | 'error' | 'info'
+            text1: 'Agregado',
+            text2:
+              'Número ' +
+              numberTemp +
+              ' con L. ' +
+              numberSelected.lempiras.toLocaleString() +
+              '.00',
+            position: 'top', // or 'top'
+            visibilityTime: 1300,
+            autoHide: true,
+            topOffset: 15,
+          });
         setPrincipalButtons((prev) =>
           prev.map((button) =>
             button.value === -2 ? { ...button, name: '>' } : button
@@ -179,6 +183,8 @@ export default function HomeScreen({ navigation }) {
             flexDirection: 'row',
             justifyContent: 'space-between',
             paddingHorizontal: 10,
+            width: '100%',
+            position: 'absolute',
           }}
         >
           {/* TOTAL L TICKET */}
@@ -190,7 +196,7 @@ export default function HomeScreen({ navigation }) {
               fontSize: 18,
             }}
           >
-            L. {totalTicket.toFixed(2)}
+            L. {total_lempiras.toFixed(2)}
           </Text>
           {/* AVAILABLE */}
           {option === 'Lempiras' && (
@@ -229,7 +235,7 @@ export default function HomeScreen({ navigation }) {
               option === 'Numero' ? styles.optionNumber : styles.optionLempiras
             }
           >
-            {option}
+            {option === 'Numero' ? 'Número' : 'Lempiras'}
           </Text>
         </View>
         {/* NUMBERS */}
