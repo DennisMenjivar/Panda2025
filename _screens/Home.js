@@ -8,12 +8,14 @@ import {
 import { useEffect, useState } from 'react';
 import Toast from 'react-native-toast-message';
 import { ScrollView } from 'react-native-gesture-handler';
-
+import Icon from 'react-native-vector-icons/Ionicons';
 import {
   createTables,
   insertDiariaTicketIfNotExists,
   insertDetalleAndUpdateTicket,
   getTotalLempirasFromDraftTicket,
+  checkAvailabilityByNumber,
+  getAvailabilityAmountByNumber,
 } from '../database/DiariaModel';
 import { message, styles, toastConfig } from '../constants';
 
@@ -22,12 +24,12 @@ const screenHeight = Dimensions.get('window').height;
 export default function HomeScreen({ navigation }) {
   const [total_lempiras, setTotal_lempiras] = useState(0);
   const [refreshing, setRefreshing] = useState(false);
-  // const [principalText, setPrincipalText] = useState(0);
-  const [totalTicket, setTotalTicket] = useState(0);
+  const [ticketID, setTicketID] = useState(0);
   const [numberSelected, setNumberSelected] = useState({
     number: 0,
     lempiras: 0,
   });
+  const [totalAvailablePerNumber, setTotalAvailablePerNumber] = useState(0);
   const [option, setOption] = useState('Numero'); //Lempira, Numero
   const [principalButtons, setPrincipalButtons] = useState([
     { value: 1, name: '1' },
@@ -47,8 +49,9 @@ export default function HomeScreen({ navigation }) {
   const loadData = async () => {
     await createTables();
     const id = await insertDiariaTicketIfNotExists();
+    setTicketID(id);
     const tl = await getTotalLempirasFromDraftTicket();
-
+    setTotal_lempiras(tl);
     if (tl) setTotal_lempiras(tl);
     if (id)
       message(
@@ -96,6 +99,11 @@ export default function HomeScreen({ navigation }) {
       }
     } else if (btn.value === -2) {
       if (option === 'Numero') {
+        const tempAva = await getAvailabilityAmountByNumber(
+          ticketID,
+          numberSelected.number
+        );
+        setTotalAvailablePerNumber(tempAva.amount);
         setOption('Lempiras');
         setPrincipalButtons((prev) =>
           prev.map((button) =>
@@ -108,6 +116,22 @@ export default function HomeScreen({ navigation }) {
           numberSelected.number <= 9
             ? '0' + String(numberSelected.number)
             : String(numberSelected.number);
+
+        const availability = await checkAvailabilityByNumber(
+          ticketID,
+          numberSelected.number,
+          numberSelected.lempiras
+        );
+        if (availability.success === false) {
+          message(
+            'error',
+            'Número ' + numberSelected.number,
+            'No tiene saldo suficiente!',
+            'top',
+            1300
+          );
+          return;
+        }
 
         const temp = await insertDetalleAndUpdateTicket(
           numberSelected.number,
@@ -162,6 +186,25 @@ export default function HomeScreen({ navigation }) {
     }
   };
 
+  useEffect(() => {
+    navigation.setOptions({
+      headerRight: () =>
+        total_lempiras ? (
+          <TouchableOpacity
+            onPress={() => navigation.navigate('DiariaTicket')}
+            style={{ marginRight: 15 }}
+          >
+            <Icon
+              name="cash-outline"
+              size={25}
+              color="#fff"
+              onPress={() => navigation.navigate('DiariaTicket')}
+            />
+          </TouchableOpacity>
+        ) : null,
+    });
+  }, [navigation, total_lempiras]);
+
   return (
     <>
       <ScrollView
@@ -180,7 +223,7 @@ export default function HomeScreen({ navigation }) {
           {/* AVAILABLE */}
           {option === 'Lempiras' && (
             <Text style={styles.available_per_number}>
-              Disp. {totalTicket.toFixed(2)}
+              Disp. {totalAvailablePerNumber.toFixed(2)}
             </Text>
           )}
         </View>

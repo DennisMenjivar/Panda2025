@@ -219,6 +219,74 @@ export const updateLempirasByRange = async (start, end, newAmount) => {
   }
 };
 
+// CHECK AVAILABILITY PER NUMBER
+export const checkAvailabilityByNumber = async (
+  ticketId,
+  number,
+  lempirasToInsert
+) => {
+  const db = await getDBConnection();
+  const createdAt = new Date().toISOString();
+
+  try {
+    // 1️⃣ Get max allowed lempiras from diaria_limits
+    const [limitResult] = await db.executeSql(
+      'SELECT lempiras FROM diaria_limits WHERE number = ?',
+      [number]
+    );
+
+    if (limitResult.rows.length === 0) {
+      return { success: false, message: 'Number not defined' };
+    }
+
+    const maxAllowed = limitResult.rows.item(0).lempiras;
+
+    // 2️⃣ Get current total lempiras in diaria_detalle for this number and ticket
+    const [sumResult] = await db.executeSql(
+      'SELECT SUM(lempiras) as total FROM diaria_detalle WHERE ticket_id = ? AND number = ?',
+      [ticketId, number]
+    );
+
+    const currentTotal = sumResult.rows.item(0).total || 0;
+    const newTotal = currentTotal + lempirasToInsert;
+
+    // 3️⃣ Check against the limit
+    if (newTotal > maxAllowed) {
+      return {
+        success: false,
+        message: `Limit exceeded for number ${number}. Max: ${maxAllowed}, current: ${currentTotal}`,
+      };
+    }
+    return { success: true, message: 'Successfully' };
+  } catch (error) {
+    return { success: false, message: 'DB error' };
+  }
+};
+
+export const getAvailabilityAmountByNumber = async (ticketId, number) => {
+  const db = await getDBConnection();
+
+  try {
+    const [limitResult] = await db.executeSql(
+      'SELECT lempiras FROM diaria_limits WHERE number = ?',
+      [number]
+    );
+    const [sumResult] = await db.executeSql(
+      'SELECT SUM(lempiras) as total FROM diaria_detalle WHERE ticket_id = ? AND number = ?',
+      [ticketId, number]
+    );
+    const maxAllowed = limitResult.rows.item(0).lempiras;
+    const currentTotal = sumResult.rows.item(0).total || 0;
+    return {
+      success: true,
+      amount: maxAllowed - currentTotal,
+      message: 'Success',
+    };
+  } catch (error) {
+    return { success: false, amount: 0, message: 'DB error' };
+  }
+};
+
 export const insertDiariaTicket = async (total_lempiras) => {
   const now = new Date().toISOString();
   const db = await getDBConnection();

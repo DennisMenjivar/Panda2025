@@ -4,9 +4,8 @@ import HomeScreen from '../Panda/_screens/Home';
 import ControlLimites from '../Panda/_screens/ControlLimites';
 import { Button, View } from 'react-native';
 import Icon from 'react-native-vector-icons/Ionicons';
+import DiariaTicket from './_screens/DiariaTicket';
 
-import { useEffect, useState } from 'react';
-import { getTotalLempirasFromDraftTicket } from './database/DiariaModel';
 function NotificationsScreen({ navigation }) {
   return (
     <View style={{ flex: 1, alignItems: 'center', justifyContent: 'center' }}>
@@ -19,17 +18,6 @@ function NotificationsScreen({ navigation }) {
 const Drawer = createDrawerNavigator();
 
 export default function App() {
-  const [total_lempiras, setTotal_lempiras] = useState(0);
-
-  const loadData = async () => {
-    const tl = await getTotalLempirasFromDraftTicket();
-    if (tl) setTotal_lempiras(tl);
-  };
-
-  useEffect(() => {
-    loadData();
-  }, []);
-
   return (
     <NavigationContainer>
       <Drawer.Navigator
@@ -52,22 +40,6 @@ export default function App() {
                 size={size}
                 color={color}
               />
-            ),
-            headerRight: () => (
-              <View style={{ marginRight: 15 }}>
-                {total_lempiras > 0 && (
-                  <Icon
-                    name="cash-outline"
-                    size={25}
-                    color="#fff"
-                    onPress={() => {
-                      // 👉 Do something here
-                      console.log('Right button pressed!');
-                      // Or navigate: navigation.navigate('SomeScreen')
-                    }}
-                  />
-                )}
-              </View>
             ),
           }}
           name="Panda"
@@ -124,6 +96,16 @@ export default function App() {
           }}
           name="Cierres"
           component={NotificationsScreen}
+        />
+        <Drawer.Screen
+          name="DiariaTicket"
+          component={DiariaTicket}
+          options={{
+            title: 'Ticket',
+            drawerItemStyle: { display: 'none' },
+            headerBackTitleVisible: false,
+            headerBackVisible: true,
+          }}
         />
       </Drawer.Navigator>
     </NavigationContainer>
