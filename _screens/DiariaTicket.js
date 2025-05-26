@@ -1,5 +1,11 @@
 import { useContext, useEffect, useState } from 'react';
-import { View, Text, TouchableOpacity } from 'react-native';
+import {
+  View,
+  Text,
+  TouchableOpacity,
+  ScrollView,
+  SafeAreaView,
+} from 'react-native';
 import Icon from 'react-native-vector-icons/Ionicons';
 import { getDetalleByTicketId } from '../database/DiariaModel';
 import { styles } from '../constants';
@@ -8,6 +14,7 @@ import { GlobalContext } from '../context/GlobalContext';
 
 export default function DiariaTicket({ navigation, route }) {
   const { countTicketDetail, setCountTicketDetail } = useContext(GlobalContext);
+  const [totalLempiras, setTotalLempiras] = useState(0);
   const [detalleList, setDetalleList] = useState([]);
   const ticketId = route?.params?.ticketId || 0;
   const total_lempiras = route?.params?.total_lempiras || 0;
@@ -20,6 +27,11 @@ export default function DiariaTicket({ navigation, route }) {
   useEffect(() => {
     loadData();
   }, [ticketId, total_lempiras]);
+
+  useEffect(() => {
+    const Temp = detalleList.reduce((sum, item) => sum + item.lempiras, 0);
+    setTotalLempiras(Temp);
+  }, [detalleList]);
 
   useEffect(() => {
     navigation.setOptions({
@@ -86,13 +98,93 @@ export default function DiariaTicket({ navigation, route }) {
   );
 
   return (
-    <View style={styles.containerDetalle}>
-      <FlatList
-        data={detalleList}
-        keyExtractor={(item) => item.id.toString()}
-        renderItem={renderItem}
-        contentContainerStyle={{ padding: 10 }}
-      />
-    </View>
+    <SafeAreaView
+      style={{ height: '100%', top: 1, backgroundColor: '#d7d7d7' }}
+    >
+      <View style={{ width: '100%' }}>
+        <Text
+          style={{
+            textAlign: 'center',
+            paddingVertical: 10,
+            backgroundColor: '#2d2b2d',
+            color: 'white',
+            fontSize: 22,
+            fontWeight: 'bold',
+          }}
+        >
+          Total: L.{' '}
+          {totalLempiras.toLocaleString('en-HN', {
+            minimumFractionDigits: 2,
+            maximumFractionDigits: 2,
+          })}
+        </Text>
+      </View>
+      <View>
+        <FlatList
+          data={detalleList}
+          keyExtractor={(item) => item.id.toString()}
+          renderItem={renderItem}
+          contentContainerStyle={{ padding: 10, paddingBottom: 120 }}
+        />
+      </View>
+      <View
+        style={{
+          flexDirection: 'row',
+          alignItems: 'flex-start',
+          justifyContent: 'center',
+          paddingVertical: 10,
+          backgroundColor: '#2d2b2d',
+          position: 'absolute',
+          bottom: 0,
+          height: 100,
+          width: '100%',
+          borderTopColor: '#488aff',
+          borderTopWidth: 2,
+        }}
+      >
+        {/* Trash Button (15%) */}
+        <TouchableOpacity
+          style={{
+            backgroundColor: '#ff3b30',
+            padding: 10,
+            borderRadius: 8,
+            alignItems: 'center',
+            justifyContent: 'center',
+            width: '15%',
+            marginRight: 10,
+          }}
+          onPress={() => console.log('🗑 Delete Ticket pressed')}
+        >
+          <Icon name="trash-outline" size={22} color="#fff" />
+        </TouchableOpacity>
+
+        {/* Finalizar Ticket Button (70%) */}
+        <TouchableOpacity
+          style={{
+            backgroundColor: '#488aff',
+            padding: 10,
+            borderRadius: 8,
+            alignItems: 'center',
+            justifyContent: 'center',
+            width: '70%',
+          }}
+          onPress={() => console.log('✅ Finalize Ticket')}
+        >
+          <View style={{ flexDirection: 'row', alignItems: 'center' }}>
+            <Text
+              style={{
+                color: '#fff',
+                fontSize: 18,
+                fontWeight: 'bold',
+                marginRight: 8,
+              }}
+            >
+              Finalizar Ticket
+            </Text>
+            <Icon name="send" size={22} color="#fff" />
+          </View>
+        </TouchableOpacity>
+      </View>
+    </SafeAreaView>
   );
 }

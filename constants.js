@@ -103,7 +103,7 @@ export const styles = StyleSheet.create({
   // DETALLE'
   containerDetalle: {
     flex: 1,
-    backgroundColor: '#fff',
+    backgroundColor: '#d7d7d7',
   },
   cardRowDetalle: {
     flexDirection: 'row',
