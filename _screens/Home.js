@@ -5,7 +5,7 @@ import {
   Dimensions,
   TouchableOpacity,
 } from 'react-native';
-import { useEffect, useState } from 'react';
+import { useCallback, useContext, useEffect, useState } from 'react';
 import Toast from 'react-native-toast-message';
 import { ScrollView } from 'react-native-gesture-handler';
 import Icon from 'react-native-vector-icons/Ionicons';
@@ -16,12 +16,16 @@ import {
   getTotalLempirasFromDraftTicket,
   checkAvailabilityByNumber,
   getAvailabilityAmountByNumber,
+  getDetalleCountByDraftTicket,
 } from '../database/DiariaModel';
 import { message, styles, toastConfig } from '../constants';
+import { GlobalContext } from '../context/GlobalContext'; // adjust path
+import { useFocusEffect } from '@react-navigation/native';
 
 const screenHeight = Dimensions.get('window').height;
 
 export default function HomeScreen({ navigation }) {
+  const { countTicketDetail, setCountTicketDetail } = useContext(GlobalContext);
   const [total_lempiras, setTotal_lempiras] = useState(0);
   const [refreshing, setRefreshing] = useState(false);
   const [ticketID, setTicketID] = useState(0);
@@ -67,6 +71,16 @@ export default function HomeScreen({ navigation }) {
   useEffect(() => {
     loadData();
   }, []);
+
+  useFocusEffect(
+    useCallback(() => {
+      const fetchData = async () => {
+        const count = await getDetalleCountByDraftTicket();
+        setCountTicketDetail(count);
+      };
+      fetchData();
+    }, [])
+  );
 
   const onRefresh = async () => {
     setRefreshing(true);
@@ -140,7 +154,7 @@ export default function HomeScreen({ navigation }) {
         const tl = await getTotalLempirasFromDraftTicket();
         if (tl) setTotal_lempiras(tl);
         await onRefresh();
-        if (temp)
+        if (temp) {
           message(
             'success',
             'Agregado',
@@ -152,11 +166,13 @@ export default function HomeScreen({ navigation }) {
             'top',
             1300
           );
-        setPrincipalButtons((prev) =>
-          prev.map((button) =>
-            button.value === -2 ? { ...button, name: '>' } : button
-          )
-        );
+          setPrincipalButtons((prev) =>
+            prev.map((button) =>
+              button.value === -2 ? { ...button, name: '>' } : button
+            )
+          );
+          setCountTicketDetail((prev) => prev + 1);
+        }
       }
     } else {
       if (option === 'Numero') {
@@ -191,15 +207,26 @@ export default function HomeScreen({ navigation }) {
       headerRight: () =>
         total_lempiras ? (
           <TouchableOpacity
-            onPress={() => navigation.navigate('DiariaTicket')}
             style={{ marginRight: 15 }}
+            onPress={() =>
+              navigation.navigate('DiariaTicket', {
+                ticketId: ticketID,
+                total_lempiras,
+              })
+            }
           >
-            <Icon
-              name="cash-outline"
-              size={25}
-              color="#fff"
-              onPress={() => navigation.navigate('DiariaTicket')}
-            />
+            <View
+              style={{
+                flexDirection: 'row',
+                alignItems: 'center',
+                justifyContent: 'space-between',
+              }}
+            >
+              <Text style={{ paddingRight: 5, color: 'white' }}>
+                {countTicketDetail}
+              </Text>
+              <Icon name="cash-outline" size={25} color="#fff" />
+            </View>
           </TouchableOpacity>
         ) : null,
     });

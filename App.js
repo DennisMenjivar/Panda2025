@@ -5,6 +5,7 @@ import ControlLimites from '../Panda/_screens/ControlLimites';
 import { Button, View } from 'react-native';
 import Icon from 'react-native-vector-icons/Ionicons';
 import DiariaTicket from './_screens/DiariaTicket';
+import { GlobalProvider } from './context/GlobalContext';
 
 function NotificationsScreen({ navigation }) {
   return (
@@ -19,95 +20,97 @@ const Drawer = createDrawerNavigator();
 
 export default function App() {
   return (
-    <NavigationContainer>
-      <Drawer.Navigator
-        screenOptions={{
-          headerStyle: {
-            backgroundColor: '#2d2b2d', // 🔵 Top header background color
-          },
-          headerTintColor: '#ffffff', // ⚪ Text and icon color
-          headerTitleStyle: {
-            fontWeight: 'bold',
-          },
-        }}
-        initialRouteName="Home"
-      >
-        <Drawer.Screen
-          options={{
-            drawerIcon: ({ focused, color, size }) => (
-              <Icon
-                name="home-outline" // change this to any icon name you want
-                size={size}
-                color={color}
-              />
-            ),
+    <GlobalProvider>
+      <NavigationContainer>
+        <Drawer.Navigator
+          screenOptions={{
+            headerStyle: {
+              backgroundColor: '#2d2b2d', // 🔵 Top header background color
+            },
+            headerTintColor: '#ffffff', // ⚪ Text and icon color
+            headerTitleStyle: {
+              fontWeight: 'bold',
+            },
           }}
-          name="Panda"
-          component={HomeScreen}
-        />
-        <Drawer.Screen
-          options={{
-            drawerIcon: ({ focused, color, size }) => (
-              <Icon
-                name="book-outline" // change this to any icon name you want
-                size={size}
-                color={color}
-              />
-            ),
-          }}
-          name="Tickets"
-          component={NotificationsScreen}
-        />
-        <Drawer.Screen
-          options={{
-            drawerIcon: ({ focused, color, size }) => (
-              <Icon
-                name="bar-chart-outline" // change this to any icon name you want
-                size={size}
-                color={color}
-              />
-            ),
-          }}
-          name="Consolidado"
-          component={NotificationsScreen}
-        />
-        <Drawer.Screen
-          options={{
-            drawerIcon: ({ focused, color, size }) => (
-              <Icon
-                name="code-outline" // change this to any icon name you want
-                size={size}
-                color={color}
-              />
-            ),
-          }}
-          name="Control limites"
-          component={ControlLimites}
-        />
-        <Drawer.Screen
-          options={{
-            drawerIcon: ({ focused, color, size }) => (
-              <Icon
-                name="file-tray-stacked-outline" // change this to any icon name you want
-                size={size}
-                color={color}
-              />
-            ),
-          }}
-          name="Cierres"
-          component={NotificationsScreen}
-        />
-        <Drawer.Screen
-          name="DiariaTicket"
-          component={DiariaTicket}
-          options={{
-            title: 'Ticket',
-            drawerItemStyle: { display: 'none' },
-            headerBackTitleVisible: false,
-            headerBackVisible: true,
-          }}
-        />
-      </Drawer.Navigator>
-    </NavigationContainer>
+          initialRouteName="Home"
+        >
+          <Drawer.Screen
+            options={{
+              drawerIcon: ({ focused, color, size }) => (
+                <Icon
+                  name="home-outline" // change this to any icon name you want
+                  size={size}
+                  color={color}
+                />
+              ),
+            }}
+            name="Panda"
+            component={HomeScreen}
+          />
+          <Drawer.Screen
+            options={{
+              drawerIcon: ({ focused, color, size }) => (
+                <Icon
+                  name="book-outline" // change this to any icon name you want
+                  size={size}
+                  color={color}
+                />
+              ),
+            }}
+            name="Tickets"
+            component={NotificationsScreen}
+          />
+          <Drawer.Screen
+            options={{
+              drawerIcon: ({ focused, color, size }) => (
+                <Icon
+                  name="bar-chart-outline" // change this to any icon name you want
+                  size={size}
+                  color={color}
+                />
+              ),
+            }}
+            name="Consolidado"
+            component={NotificationsScreen}
+          />
+          <Drawer.Screen
+            options={{
+              drawerIcon: ({ focused, color, size }) => (
+                <Icon
+                  name="code-outline" // change this to any icon name you want
+                  size={size}
+                  color={color}
+                />
+              ),
+            }}
+            name="Control limites"
+            component={ControlLimites}
+          />
+          <Drawer.Screen
+            options={{
+              drawerIcon: ({ focused, color, size }) => (
+                <Icon
+                  name="file-tray-stacked-outline" // change this to any icon name you want
+                  size={size}
+                  color={color}
+                />
+              ),
+            }}
+            name="Cierres"
+            component={NotificationsScreen}
+          />
+          <Drawer.Screen
+            name="DiariaTicket"
+            component={DiariaTicket}
+            options={{
+              title: 'Ticket',
+              drawerItemStyle: { display: 'none' },
+              headerBackTitleVisible: false,
+              headerBackVisible: true,
+            }}
+          />
+        </Drawer.Navigator>
+      </NavigationContainer>
+    </GlobalProvider>
   );
 }

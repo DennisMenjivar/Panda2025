@@ -100,6 +100,35 @@ export const styles = StyleSheet.create({
     fontSize: 17,
     color: '#333',
   },
+  // DETALLE'
+  containerDetalle: {
+    flex: 1,
+    backgroundColor: '#fff',
+  },
+  cardRowDetalle: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    backgroundColor: '#f4f4f4',
+    padding: 16,
+    borderRadius: 10,
+    marginBottom: 10,
+  },
+  cardContentDetalle: {
+    flexDirection: 'column',
+  },
+  bigNumberDetalle: {
+    fontSize: 40,
+    fontWeight: 'bold',
+    color: '#000',
+  },
+  lempirasDetalle: {
+    fontSize: 18,
+    color: '#488aff',
+  },
+  trashButtonDetalle: {
+    padding: 10,
+  },
 });
 
 export const toastConfig = {

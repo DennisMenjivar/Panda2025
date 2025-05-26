@@ -263,6 +263,7 @@ export const checkAvailabilityByNumber = async (
   }
 };
 
+// GET THE AVAILABILITY PER NUMBER
 export const getAvailabilityAmountByNumber = async (ticketId, number) => {
   const db = await getDBConnection();
 
@@ -284,6 +285,45 @@ export const getAvailabilityAmountByNumber = async (ticketId, number) => {
     };
   } catch (error) {
     return { success: false, amount: 0, message: 'DB error' };
+  }
+};
+
+// GET THE TICKET DETAILS BY TICKET ID
+export const getDetalleByTicketId = async (ticketId) => {
+  const db = await getDBConnection();
+
+  try {
+    const [result] = await db.executeSql(
+      `SELECT id, number, lempiras FROM diaria_detalle WHERE ticket_id = ? ORDER BY number ASC`,
+      [ticketId]
+    );
+
+    const items = [];
+    for (let i = 0; i < result.rows.length; i++) {
+      items.push(result.rows.item(i));
+    }
+    return items;
+  } catch (error) {
+    console.error('❌ Error fetching detalle:', error);
+    return [];
+  }
+};
+
+// GET THE TICKETS IN DRAFT COUNT
+export const getDetalleCountByDraftTicket = async () => {
+  const db = await getDBConnection();
+  try {
+    const [result] = await db.executeSql(`
+      SELECT COUNT(*) as count
+      FROM diaria_ticket dt
+      JOIN diaria_detalle dd ON dt.id = dd.ticket_id
+      WHERE dt.status = 0
+    `);
+
+    const count = result.rows.item(0).count;
+    return count;
+  } catch (error) {
+    return 0;
   }
 };
 
