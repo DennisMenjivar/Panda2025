@@ -8,7 +8,6 @@ import {
   TouchableOpacity,
 } from 'react-native';
 import { useEffect, useState, useRef } from 'react';
-import Toast from 'react-native-toast-message';
 import { FlatList, TextInput } from 'react-native-gesture-handler';
 
 import {
@@ -17,7 +16,7 @@ import {
   getAllPedazos,
   updateLempirasByRange,
 } from '../database/DiariaModel';
-import { message, toastConfig } from '../constants';
+import { message } from '../constants';
 
 export default function HomeScreen({ navigation }) {
   const startInputRef = useRef(null);
@@ -54,12 +53,6 @@ export default function HomeScreen({ navigation }) {
   useEffect(() => {
     loadData();
   }, []);
-
-  const onRefresh = async () => {
-    setRefreshing(true);
-    await loadData();
-    setRefreshing(false);
-  };
 
   const handleUpdate = async () => {
     const startNum = parseInt(start);
@@ -175,7 +168,6 @@ export default function HomeScreen({ navigation }) {
         // }
         contentContainerStyle={{ padding: 10 }}
       />
-      <Toast config={toastConfig} />
     </SafeAreaView>
   );
 }
