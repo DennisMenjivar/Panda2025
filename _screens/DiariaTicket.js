@@ -3,14 +3,18 @@ import {
   View,
   Text,
   TouchableOpacity,
-  ScrollView,
   SafeAreaView,
+  Alert,
 } from 'react-native';
 import Icon from 'react-native-vector-icons/Ionicons';
-import { getDetalleByTicketId } from '../database/DiariaModel';
-import { styles } from '../constants';
+import {
+  deleteAllDetalleByTicketId,
+  getDetalleByTicketId,
+} from '../database/DiariaModel';
+import { message, styles } from '../constants';
 import { FlatList } from 'react-native-gesture-handler';
 import { GlobalContext } from '../context/GlobalContext';
+import { getDBConnection } from '../database/db';
 
 export default function DiariaTicket({ navigation, route }) {
   const { countTicketDetail, setCountTicketDetail } = useContext(GlobalContext);
@@ -26,7 +30,11 @@ export default function DiariaTicket({ navigation, route }) {
 
   useEffect(() => {
     loadData();
-  }, [ticketId, total_lempiras]);
+  }, []);
+
+  useEffect(() => {
+    loadData();
+  }, [ticketId, total_lempiras, countTicketDetail]);
 
   useEffect(() => {
     const Temp = detalleList.reduce((sum, item) => sum + item.lempiras, 0);
@@ -59,18 +67,94 @@ export default function DiariaTicket({ navigation, route }) {
     });
   }, [navigation, ticketId, countTicketDetail]);
 
-  const handleDeleteItem = async (detalleId) => {
+  const handleDeleteItem = async (item) => {
     const db = await getDBConnection();
     try {
-      await db.executeSql(`DELETE FROM diaria_detalle WHERE id = ?`, [
-        detalleId,
-      ]);
-      // Refresh the list
-      const updatedList = await getDetalleByTicketId(db, ticketId);
-      setDetalleList(updatedList);
+      const temp = await db.executeSql(
+        `DELETE FROM diaria_detalle WHERE id = ?`,
+        [item.id]
+      );
+      if (temp) {
+        await db.executeSql(
+          `UPDATE diaria_ticket 
+       SET total_lempiras = total_lempiras - ? 
+       WHERE id = ?`,
+          [item.lempiras, ticketId] // Make sure item includes ticket_id
+        );
+
+        // Refresh the list
+        await loadData();
+        // setCountTicketDetail(detalleList.length);
+        setCountTicketDetail((prev) => prev - 1);
+        await message(
+          'success',
+          'Eliminado',
+          'Número ' + item.number + ' eliminado correctamente!',
+          'top',
+          1700
+        );
+      }
     } catch (error) {
       console.error('❌ Error deleting item:', error);
     }
+  };
+
+  const handleDeleteAllTicket = async () => {
+    const temp = await deleteAllDetalleByTicketId(ticketId);
+    if (temp) {
+      await message(
+        'success',
+        'Eliminado',
+        'Números eliminados correctamente!',
+        'top',
+        1700
+      ).then(() => {
+        setDetalleList([]);
+        navigation.navigate('Panda');
+      });
+    }
+  };
+
+  const showDeleteNumberMessage = (item) => {
+    const newNumber = item.number <= 9 ? '0' + item.number : item.number;
+
+    Alert.alert(
+      '¿Estás seguro?', // title
+      '¿Eliminar el número ' + newNumber + ' con ' + item.lempiras + '?', // message
+      [
+        {
+          text: 'No',
+          style: 'cancel',
+          onPress: () => console.log('❌ Cancelado'),
+        },
+        {
+          text: 'Sí',
+          onPress: () => handleDeleteItem(item),
+        },
+      ],
+      { cancelable: true }
+    );
+  };
+
+  const showDeleteAllTicketMessage = () => {
+    Alert.alert(
+      '¿Estás seguro?', // title
+      '¿Eliminar todo el ticket ' + ticketId + '?', // message
+      [
+        {
+          text: 'No',
+          style: 'cancel',
+          onPress: () => console.log('❌ Cancelado'),
+        },
+        {
+          text: 'Sí',
+          onPress: () => {
+            handleDeleteAllTicket();
+          },
+        },
+      ],
+      { cancelable: true }
+    );
   };
 
   const renderItem = ({ item }) => (
@@ -90,7 +174,7 @@ export default function DiariaTicket({ navigation, route }) {
 
       <TouchableOpacity
         style={styles.trashButtonDetalle}
-        onPress={() => handleDeleteItem(item.id)}
+        onPress={() => showDeleteNumberMessage(item)}
       >
         <Icon name="trash-outline" size={24} color="#ff3b30" />
       </TouchableOpacity>
@@ -153,7 +237,7 @@ export default function DiariaTicket({ navigation, route }) {
             width: '15%',
             marginRight: 10,
           }}
-          onPress={() => console.log('🗑 Delete Ticket pressed')}
+          onPress={() => showDeleteAllTicketMessage()}
         >
           <Icon name="trash-outline" size={22} color="#fff" />
         </TouchableOpacity>

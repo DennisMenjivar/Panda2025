@@ -6,6 +6,8 @@ import { Button, View } from 'react-native';
 import Icon from 'react-native-vector-icons/Ionicons';
 import DiariaTicket from './_screens/DiariaTicket';
 import { GlobalProvider } from './context/GlobalContext';
+import Toast from 'react-native-toast-message';
+import { toastConfig } from './constants';
 
 function NotificationsScreen({ navigation }) {
   return (
@@ -32,7 +34,7 @@ export default function App() {
               fontWeight: 'bold',
             },
           }}
-          initialRouteName="Home"
+          initialRouteName="Panda"
         >
           <Drawer.Screen
             options={{
@@ -110,6 +112,7 @@ export default function App() {
             }}
           />
         </Drawer.Navigator>
+        <Toast config={toastConfig} />
       </NavigationContainer>
     </GlobalProvider>
   );

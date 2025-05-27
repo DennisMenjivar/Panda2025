@@ -327,6 +327,23 @@ export const getDetalleCountByDraftTicket = async () => {
   }
 };
 
+// DELETE ALL TICKETS BY TICKET_ID
+export const deleteAllDetalleByTicketId = async (ticketId) => {
+  const db = await getDBConnection();
+  try {
+    await db.executeSql(`DELETE FROM diaria_detalle WHERE ticket_id = ?`, [
+      ticketId,
+    ]);
+    await db.executeSql(
+      `UPDATE diaria_ticket SET total_lempiras = 0 WHERE id = ?`,
+      [ticketId]
+    );
+    return true;
+  } catch (error) {
+    return false;
+  }
+};
+
 export const insertDiariaTicket = async (total_lempiras) => {
   const now = new Date().toISOString();
   const db = await getDBConnection();

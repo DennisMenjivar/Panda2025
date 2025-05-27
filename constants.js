@@ -166,6 +166,6 @@ export const message = async (type, text1, text2, position, visibilityTime) => {
     position, // or 'top'
     visibilityTime,
     autoHide: true,
-    topOffset: 15,
+    topOffset: 105,
   });
 };

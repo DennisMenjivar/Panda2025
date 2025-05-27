@@ -6,7 +6,6 @@ import {
   TouchableOpacity,
 } from 'react-native';
 import { useCallback, useContext, useEffect, useState } from 'react';
-import Toast from 'react-native-toast-message';
 import { ScrollView } from 'react-native-gesture-handler';
 import Icon from 'react-native-vector-icons/Ionicons';
 import {
@@ -18,7 +17,7 @@ import {
   getAvailabilityAmountByNumber,
   getDetalleCountByDraftTicket,
 } from '../database/DiariaModel';
-import { message, styles, toastConfig } from '../constants';
+import { message, styles } from '../constants';
 import { GlobalContext } from '../context/GlobalContext'; // adjust path
 import { useFocusEffect } from '@react-navigation/native';
 
@@ -75,10 +74,21 @@ export default function HomeScreen({ navigation }) {
   useFocusEffect(
     useCallback(() => {
       const fetchData = async () => {
+        const id = await insertDiariaTicketIfNotExists();
+        setTicketID(id);
+        const tl = await getTotalLempirasFromDraftTicket();
+        setTotal_lempiras(tl);
         const count = await getDetalleCountByDraftTicket();
         setCountTicketDetail(count);
       };
       fetchData();
+    }, [])
+  );
+
+  useFocusEffect(
+    useCallback(() => {
+      setOption('Numero');
+      setNumberSelected({ number: 0, lempiras: 0 });
     }, [])
   );
 
@@ -230,7 +240,7 @@ export default function HomeScreen({ navigation }) {
           </TouchableOpacity>
         ) : null,
     });
-  }, [navigation, total_lempiras]);
+  }, [navigation, total_lempiras, countTicketDetail]);
 
   return (
     <>
@@ -307,7 +317,6 @@ export default function HomeScreen({ navigation }) {
           ))}
         </View>
       </ScrollView>
-      <Toast config={toastConfig} />
     </>
   );
 }
