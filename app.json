@@ -9,13 +9,8 @@
   },
   "expo": {
     "android": {
+      "jsEngine": "jsc",
       "plugins": [
-        [
-          "expo-system-ui",
-          {
-            "edgeToEdge": true
-          }
-        ],
         [
           "expo-system-ui",
           {
@@ -26,7 +21,8 @@
       "package": "com.dnsmenjivar.panda2025"
     },
     "ios": {
-      "bundleIdentifier": "com.dnsmenjivar.panda2025"
+      "bundleIdentifier": "com.dnsmenjivar.panda2025",
+      "jsEngine": "jsc"
     }
   }
 }

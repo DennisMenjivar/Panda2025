@@ -87,9 +87,9 @@ android {
     buildToolsVersion rootProject.ext.buildToolsVersion
     compileSdk rootProject.ext.compileSdkVersion
 
-    namespace 'com.dnsmenjivar.panda'
+    namespace 'com.dnsmenjivar.panda2025'
     defaultConfig {
-        applicationId 'com.dnsmenjivar.panda'
+        applicationId 'com.dnsmenjivar.panda2025'
         minSdkVersion rootProject.ext.minSdkVersion
         targetSdkVersion rootProject.ext.targetSdkVersion
         versionCode 1

@@ -5,10 +5,13 @@ import {
   TouchableOpacity,
   SafeAreaView,
   Alert,
+  Linking,
 } from 'react-native';
+import * as Print from 'expo-print';
 import Icon from 'react-native-vector-icons/Ionicons';
 import {
   deleteAllDetalleByTicketId,
+  finalizeTicket,
   getDetalleByTicketId,
 } from '../database/DiariaModel';
 import { message, styles } from '../constants';
@@ -157,6 +160,120 @@ export default function DiariaTicket({ navigation, route }) {
     );
   };
 
+  const showConfirmTicketMessage = (phone) => {
+    Alert.alert(
+      '¿Está seguro?', // title
+      '¿Desea confirmar y enviar el ticket ' + ticketId + '?', // message
+      [
+        {
+          text: 'No',
+          style: 'cancel',
+          onPress: () => console.log('❌ Cancelado'),
+        },
+        {
+          text: 'Enviar por SMS',
+          onPress: () => {
+            sendTicketSummary(phone, 'sms');
+          },
+        },
+        {
+          text: 'Enviar por WhatsApp',
+          onPress: () => {
+            sendTicketSummary(phone);
+          },
+        },
+        {
+          text: 'Imprimir',
+          onPress: () => {
+            printTicket();
+          },
+        },
+        {
+          text: 'Solo Guardar',
+          onPress: () => {
+            sendTicketSummary(phone);
+          },
+        },
+      ],
+      { cancelable: true }
+    );
+  };
+
+  const sendTicketSummary = async (phone, type = 'whatsapp') => {
+    const temp = await finalizeTicket(ticketId, navigation);
+    if (temp === 1) {
+      if (!detalleList.length) {
+        alert('No hay datos para enviar.');
+        return;
+      }
+
+      let message = `🎟️ *Ticket #${ticketId}*\n\n`;
+
+      detalleList.forEach((item, index) => {
+        const num = item.number.toString().padStart(2, '0');
+        const amount = item.lempiras.toLocaleString('en-HN', {
+          minimumFractionDigits: 2,
+          maximumFractionDigits: 2,
+        });
+        message += `• Número ${num}: Lps. ${amount}\n`;
+      });
+
+      message += `\n💰 *Total:* Lps. ${totalLempiras.toLocaleString('en-HN', {
+        minimumFractionDigits: 2,
+        maximumFractionDigits: 2,
+      })}`;
+
+      // Send message
+      if (type === 'whatsapp') {
+        sendWhatsApp(phone, message);
+      } else {
+        sendSMS(phone, message);
+      }
+    }
+  };
+
+  const printTicket = async () => {
+    const html = generateHTML(detalleList, totalLempiras);
+    await Print.printAsync({ html });
+  };
+
+  const generateHTML = (detalleList, totalLempiras) => {
+    const rows = detalleList
+      .map(
+        (item) => `
+    <tr>
+      <td>${item.number.toString().padStart(2, '0')}</td>
+      <td>Lps. ${item.lempiras.toLocaleString('en-HN', {
+        minimumFractionDigits: 2,
+      })}</td>
+    </tr>
+  `
+      )
+      .join('');
+
+    return `
+    <html>
+      <body>
+        <h1>Ticket #${ticketId}</h1>
+        <table border="1" style="width:100%; text-align:left; border-collapse: collapse;">
+          <thead>
+            <tr>
+              <th>Number</th>
+              <th>Lempiras</th>
+            </tr>
+          </thead>
+          <tbody>
+            ${rows}
+          </tbody>
+        </table>
+        <h2>Total: Lps. ${totalLempiras.toLocaleString('en-HN', {
+          minimumFractionDigits: 2,
+        })}</h2>
+      </body>
+    </html>
+  `;
+  };
+
   const renderItem = ({ item }) => (
     <View style={styles.cardRowDetalle}>
       <View style={styles.cardContentDetalle}>
@@ -180,6 +297,20 @@ export default function DiariaTicket({ navigation, route }) {
       </TouchableOpacity>
     </View>
   );
+
+  const sendWhatsApp = (phone, message) => {
+    const url = `whatsapp://send?phone=${phone}&text=${encodeURIComponent(
+      message
+    )}`;
+    Linking.openURL(url).catch(() =>
+      alert('Make sure WhatsApp is installed on your device')
+    );
+  };
+
+  const sendSMS = (phone, message) => {
+    const url = `sms:${phone}?body=${encodeURIComponent(message)}`;
+    Linking.openURL(url).catch(() => alert('Could not open SMS app'));
+  };
 
   return (
     <SafeAreaView
@@ -252,7 +383,7 @@ export default function DiariaTicket({ navigation, route }) {
             justifyContent: 'center',
             width: '70%',
           }}
-          onPress={() => console.log('✅ Finalize Ticket')}
+          onPress={() => showConfirmTicketMessage('+18138122373')}
         >
           <View style={{ flexDirection: 'row', alignItems: 'center' }}>
             <Text

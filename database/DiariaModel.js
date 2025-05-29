@@ -344,6 +344,32 @@ export const deleteAllDetalleByTicketId = async (ticketId) => {
   }
 };
 
+// FINALIZE TICKET
+export const finalizeTicket = async (ticketId, navigation) => {
+  const db = await getDBConnection();
+  try {
+    // Step 1: Update current ticket to PUBLISHED = 1
+    await db.executeSql(`UPDATE diaria_ticket SET status = 1 WHERE id = ?`, [
+      ticketId,
+    ]);
+
+    // Step 2: Insert a new ticket
+    await db.executeSql(
+      `INSERT INTO diaria_ticket (status, total_lempiras) VALUES (?, ?)`,
+      [0, 0]
+    );
+
+    // Optional: Navigate or show message
+
+    navigation.navigate('Panda'); // or reload state
+    alert('✅ Ticket finalizado y nuevo ticket creado.');
+    return 1;
+  } catch (error) {
+    alert('❌ No se pudo finalizar el ticket.');
+    return 0;
+  }
+};
+
 export const insertDiariaTicket = async (total_lempiras) => {
   const now = new Date().toISOString();
   const db = await getDBConnection();
