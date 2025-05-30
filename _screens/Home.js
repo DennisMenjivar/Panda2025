@@ -4,9 +4,13 @@ import {
   RefreshControl,
   Dimensions,
   TouchableOpacity,
+  Alert,
+  StyleSheet,
+  Modal,
+  Button,
 } from 'react-native';
 import { useCallback, useContext, useEffect, useState } from 'react';
-import { ScrollView } from 'react-native-gesture-handler';
+import { ScrollView, TextInput } from 'react-native-gesture-handler';
 import Icon from 'react-native-vector-icons/Ionicons';
 import {
   createTables,
@@ -16,14 +20,21 @@ import {
   checkAvailabilityByNumber,
   getAvailabilityAmountByNumber,
   getDetalleCountByDraftTicket,
+  getCurrentActiveUser,
+  saveUserToSQLite,
 } from '../database/DiariaModel';
+import * as Clipboard from 'expo-clipboard';
 import { message, styles } from '../constants';
 import { GlobalContext } from '../context/GlobalContext'; // adjust path
 import { useFocusEffect } from '@react-navigation/native';
+import { getUserById } from '../firebaseController';
+import { Pressable } from 'react-native';
 
 const screenHeight = Dimensions.get('window').height;
 
 export default function HomeScreen({ navigation }) {
+  const [user, setUser] = useState();
+  const [userIdInput, setUserIdInput] = useState('');
   const { countTicketDetail, setCountTicketDetail } = useContext(GlobalContext);
   const [total_lempiras, setTotal_lempiras] = useState(0);
   const [refreshing, setRefreshing] = useState(false);
@@ -32,6 +43,7 @@ export default function HomeScreen({ navigation }) {
     number: 0,
     lempiras: 0,
   });
+  const [scrollEnabled, setScrollEnabled] = useState(true);
   const [totalAvailablePerNumber, setTotalAvailablePerNumber] = useState(0);
   const [option, setOption] = useState('Numero'); //Lempira, Numero
   const [principalButtons, setPrincipalButtons] = useState([
@@ -49,47 +61,46 @@ export default function HomeScreen({ navigation }) {
     { value: -2, name: '>' },
   ]);
 
-  const loadData = async () => {
-    await createTables();
-    const id = await insertDiariaTicketIfNotExists();
-    setTicketID(id);
-    const tl = await getTotalLempirasFromDraftTicket();
-    setTotal_lempiras(tl);
-    if (tl) setTotal_lempiras(tl);
-    if (id)
-      message(
-        'success',
-        'Ticket: #' + id,
-        'top', // or 'top'
-        1200,
-        true,
-        15
-      );
-  };
-
-  useEffect(() => {
-    loadData();
-  }, []);
-
   useFocusEffect(
     useCallback(() => {
-      const fetchData = async () => {
-        const id = await insertDiariaTicketIfNotExists();
-        setTicketID(id);
-        const tl = await getTotalLempirasFromDraftTicket();
-        setTotal_lempiras(tl);
-        const count = await getDetalleCountByDraftTicket();
-        setCountTicketDetail(count);
-      };
-      fetchData();
-    }, [])
-  );
-
-  useFocusEffect(
-    useCallback(() => {
+      let isActive = true;
       setOption('Numero');
       setNumberSelected({ number: 0, lempiras: 0 });
-    }, [])
+
+      const fetchData = async () => {
+        const tables = await createTables();
+        const cuser = await getCurrentActiveUser();
+        if (tables && cuser) {
+          if (!isActive) return;
+          setUser(cuser);
+
+          const tid = await insertDiariaTicketIfNotExists();
+          if (tid && isActive) setTicketID(tid);
+
+          const tl = await getTotalLempirasFromDraftTicket();
+          if (isActive) setTotal_lempiras(tl || 0);
+
+          const count = await getDetalleCountByDraftTicket();
+          if (isActive) setCountTicketDetail(count || 0);
+
+          // if (cuser) {
+          //   message(
+          //     'success',
+          //     'Bienvenido',
+          //     'Buen día ' + cuser.name,
+          //     'top',
+          //     2000
+          //   );
+          // }
+        }
+      };
+
+      fetchData();
+
+      return () => {
+        isActive = false; // Cleanup in case screen unmounts early
+      };
+    }, [countTicketDetail])
   );
 
   const onRefresh = async () => {
@@ -124,7 +135,6 @@ export default function HomeScreen({ navigation }) {
     } else if (btn.value === -2) {
       if (option === 'Numero') {
         const tempAva = await getAvailabilityAmountByNumber(
-          ticketID,
           numberSelected.number
         );
         setTotalAvailablePerNumber(tempAva.amount);
@@ -142,7 +152,6 @@ export default function HomeScreen({ navigation }) {
             : String(numberSelected.number);
 
         const availability = await checkAvailabilityByNumber(
-          ticketID,
           numberSelected.number,
           numberSelected.lempiras
         );
@@ -242,81 +251,184 @@ export default function HomeScreen({ navigation }) {
     });
   }, [navigation, total_lempiras, countTicketDetail]);
 
+  const handleSubmitUser = async () => {
+    if (!userIdInput.trim())
+      return Alert.alert('Campo vacío', 'Por favor ingrese un ID válido.');
+    const user = await getUserById(userIdInput.trim());
+
+    if (user) {
+      const cuser = await saveUserToSQLite(user);
+      if (cuser) {
+        setUser(cuser);
+        message('success', 'Bienvenido', 'Buen día ' + cuser.name, 'top', 2000);
+      }
+    }
+  };
+
+  const pasteUserFromClipboard = async () => {
+    try {
+      if (!userIdInput) {
+        const clipboardText = await Clipboard.getStringAsync();
+
+        if (!clipboardText) {
+          Alert.alert('Clipboard vacío', 'No hay texto copiado.');
+          return;
+        }
+
+        setUserIdInput(clipboardText);
+      } else {
+        setUserIdInput('');
+      }
+    } catch (error) {
+      Alert.alert('Error', 'Ocurrió un error al pegar el usuario.');
+    }
+  };
+
   return (
     <>
-      <ScrollView
-        style={styles.container}
-        contentContainerStyle={styles.scrollContent}
-        refreshControl={
-          <RefreshControl refreshing={refreshing} onRefresh={onRefresh} />
-        }
-      >
-        {/* TOTAL & Disponible */}
-        <View style={styles.top_labels_view}>
-          {/* TOTAL L TICKET */}
-          <Text style={styles.total_amount}>
-            L. {total_lempiras.toFixed(2)}
-          </Text>
-          {/* AVAILABLE */}
-          {option === 'Lempiras' && (
-            <Text style={styles.available_per_number}>
-              Disp. {totalAvailablePerNumber.toFixed(2)}
-            </Text>
-          )}
-        </View>
-        <View
-          style={{
-            height: screenHeight * 0.3,
-            maxWidth: '100%',
-            justifyContent: 'center',
-            alignItems: 'center',
-          }}
+      <Modal visible={user ? false : true} transparent animationType="slide">
+        {!user && (
+          <View style={stylesLocal.overlay}>
+            <View style={stylesLocal.container}>
+              <Text style={stylesLocal.title}>Ingrese el ID del Usuario</Text>
+              <TextInput
+                style={stylesLocal.input}
+                placeholder="Panda User ID"
+                value={userIdInput}
+                onChangeText={setUserIdInput}
+              />
+              <View style={stylesLocal.buttonRow}>
+                <Button
+                  title={userIdInput ? 'Borrar' : 'Pegar'}
+                  onPress={() => pasteUserFromClipboard()}
+                />
+                {userIdInput.length > 18 && (
+                  <Button title="Confirmar" onPress={handleSubmitUser} />
+                )}
+              </View>
+            </View>
+          </View>
+        )}
+      </Modal>
+      {user && (
+        <ScrollView
+          scrollEnabled={scrollEnabled} // 👈 control scroll here
+          style={styles.container}
+          contentContainerStyle={styles.scrollContent}
+          refreshControl={
+            <RefreshControl refreshing={refreshing} onRefresh={onRefresh} />
+          }
         >
-          {option === 'Lempiras' && (
-            <Text style={styles.underlineNumber}>
-              {numberSelected.number <= 9 && <Text>0</Text>}
-              {numberSelected.number}
+          {/* TOTAL & Disponible */}
+          <View style={styles.top_labels_view}>
+            {/* TOTAL L TICKET */}
+            <Text style={styles.total_amount}>
+              L. {total_lempiras.toFixed(2)}
             </Text>
-          )}
-          {option === 'Numero' && (
-            <Text style={styles.mainNumber}>
-              {numberSelected.number <= 9 && <Text>0</Text>}
-              {numberSelected.number}
-            </Text>
-          )}
-          {option === 'Lempiras' && (
-            <Text style={styles.mainNumber}>
-              {numberSelected.lempiras.toLocaleString()}
-            </Text>
-          )}
-          <Text
-            style={
-              option === 'Numero' ? styles.optionNumber : styles.optionLempiras
-            }
+            {/* AVAILABLE */}
+            {option === 'Lempiras' && (
+              <Text style={styles.available_per_number}>
+                Disp. {totalAvailablePerNumber.toFixed(2)}
+              </Text>
+            )}
+          </View>
+          <View
+            style={{
+              height: screenHeight * 0.3,
+              maxWidth: '100%',
+              justifyContent: 'center',
+              alignItems: 'center',
+            }}
           >
-            {option === 'Numero' ? 'Número' : 'Lempiras'}
-          </Text>
-        </View>
-        {/* NUMBERS */}
-        <View
-          style={{
-            flexDirection: 'row',
-            flexWrap: 'wrap',
-            height: screenHeight * 0.55,
-            backgroundColor: 'transparent',
-          }}
-        >
-          {principalButtons.map((b, index) => (
-            <TouchableOpacity
-              key={index}
-              style={styles.buttonCell}
-              onPress={() => handleClick(b)}
+            {option === 'Lempiras' && (
+              <Text style={styles.underlineNumber}>
+                {numberSelected.number <= 9 && <Text>0</Text>}
+                {numberSelected.number}
+              </Text>
+            )}
+            {option === 'Numero' && (
+              <Text style={styles.mainNumber}>
+                {numberSelected.number <= 9 && <Text>0</Text>}
+                {numberSelected.number}
+              </Text>
+            )}
+            {option === 'Lempiras' && (
+              <Text style={styles.mainNumber}>
+                {numberSelected.lempiras.toLocaleString()}
+              </Text>
+            )}
+            <Text
+              style={
+                option === 'Numero'
+                  ? styles.optionNumber
+                  : styles.optionLempiras
+              }
             >
-              <Text style={styles.buttonText}>{b.name}</Text>
-            </TouchableOpacity>
-          ))}
-        </View>
-      </ScrollView>
+              {option === 'Numero' ? 'Número' : 'Lempiras'}
+            </Text>
+          </View>
+          {/* NUMBERS */}
+          <View
+            style={{
+              flexDirection: 'row',
+              flexWrap: 'wrap',
+              height: screenHeight * 0.55,
+              backgroundColor: 'transparent',
+            }}
+          >
+            {principalButtons.map((b, index) => (
+              <Pressable
+                key={index}
+                onPressIn={() => setScrollEnabled(false)}
+                onPressOut={() => setScrollEnabled(true)}
+                onPress={() => handleClick(b)}
+                style={({ pressed }) => [
+                  styles.buttonCell,
+                  pressed && {
+                    backgroundColor: '#e0e0e0',
+                    transform: [{ scale: 0.95 }],
+                    elevation: 3,
+                  },
+                ]}
+              >
+                <Text style={styles.buttonText}>{b.name}</Text>
+              </Pressable>
+            ))}
+          </View>
+        </ScrollView>
+      )}
     </>
   );
 }
+
+const stylesLocal = StyleSheet.create({
+  overlay: {
+    flex: 1,
+    backgroundColor: '#00000088',
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  container: {
+    backgroundColor: '#fff',
+    width: '80%',
+    padding: 20,
+    borderRadius: 10,
+    elevation: 10,
+  },
+  title: {
+    fontSize: 16,
+    fontWeight: 'bold',
+    marginBottom: 15,
+  },
+  input: {
+    borderWidth: 1,
+    borderColor: '#aaa',
+    padding: 10,
+    borderRadius: 5,
+    marginBottom: 20,
+  },
+  buttonRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+  },
+});

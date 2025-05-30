@@ -8,6 +8,8 @@ import DiariaTicket from './_screens/DiariaTicket';
 import { GlobalProvider } from './context/GlobalContext';
 import Toast from 'react-native-toast-message';
 import { toastConfig } from './constants';
+import TicketsScreen from './_screens/TicketsScreen';
+import TicketsByIDDetalleScreen from './_screens/TicketsByIDDetalleScreen';
 
 function NotificationsScreen({ navigation }) {
   return (
@@ -60,7 +62,7 @@ export default function App() {
               ),
             }}
             name="Tickets"
-            component={NotificationsScreen}
+            component={TicketsScreen}
           />
           <Drawer.Screen
             options={{
@@ -104,6 +106,16 @@ export default function App() {
           <Drawer.Screen
             name="DiariaTicket"
             component={DiariaTicket}
+            options={{
+              title: 'Ticket',
+              drawerItemStyle: { display: 'none' },
+              headerBackTitleVisible: false,
+              headerBackVisible: true,
+            }}
+          />
+          <Drawer.Screen
+            name="TicketsByIDDetalle"
+            component={TicketsByIDDetalleScreen}
             options={{
               title: 'Ticket',
               drawerItemStyle: { display: 'none' },

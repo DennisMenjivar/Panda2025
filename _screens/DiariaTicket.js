@@ -96,6 +96,7 @@ export default function DiariaTicket({ navigation, route }) {
           'top',
           1700
         );
+        if (detalleList.length === 1) navigation.navigate('Panda');
       }
     } catch (error) {
       console.error('❌ Error deleting item:', error);
@@ -123,7 +124,14 @@ export default function DiariaTicket({ navigation, route }) {
 
     Alert.alert(
       '¿Estás seguro?', // title
-      '¿Eliminar el número ' + newNumber + ' con ' + item.lempiras + '?', // message
+      '¿Eliminar el número ' +
+        newNumber +
+        ' con L.' +
+        item.lempiras.toLocaleString('en-HN', {
+          minimumFractionDigits: 2,
+          maximumFractionDigits: 2,
+        }) +
+        '?', // message
       [
         {
           text: 'No',
@@ -142,7 +150,7 @@ export default function DiariaTicket({ navigation, route }) {
   const showDeleteAllTicketMessage = () => {
     Alert.alert(
       '¿Estás seguro?', // title
-      '¿Eliminar todo el ticket ' + ticketId + '?', // message
+      '¿Eliminar todo el ticket #' + ticketId + '?', // message
       [
         {
           text: 'No',
@@ -162,36 +170,36 @@ export default function DiariaTicket({ navigation, route }) {
 
   const showConfirmTicketMessage = (phone) => {
     Alert.alert(
-      '¿Está seguro?', // title
-      '¿Desea confirmar y enviar el ticket ' + ticketId + '?', // message
+      '¿Estás seguro?', // title
+      '¿Desea confirmar y enviar el ticket #' + ticketId + '?', // message
       [
         {
-          text: 'No',
+          text: 'Cancelar',
           style: 'cancel',
           onPress: () => console.log('❌ Cancelado'),
         },
         {
-          text: 'Enviar por SMS',
+          text: '💬 Enviar por SMS',
           onPress: () => {
             sendTicketSummary(phone, 'sms');
           },
         },
         {
-          text: 'Enviar por WhatsApp',
+          text: '🚀 Enviar por WhatsApp',
           onPress: () => {
             sendTicketSummary(phone);
           },
         },
+        // {
+        //   text: '🖨️ Imprimir',
+        //   onPress: () => {
+        //     printTicket();
+        //   },
+        // },
         {
-          text: 'Imprimir',
+          text: '💾 Solo Guardar',
           onPress: () => {
-            printTicket();
-          },
-        },
-        {
-          text: 'Solo Guardar',
-          onPress: () => {
-            sendTicketSummary(phone);
+            sendTicketSummary(phone, 'save');
           },
         },
       ],
@@ -226,8 +234,9 @@ export default function DiariaTicket({ navigation, route }) {
       // Send message
       if (type === 'whatsapp') {
         sendWhatsApp(phone, message);
-      } else {
+      } else if (type === 'sms') {
         sendSMS(phone, message);
+      } else if (type === 'save') {
       }
     }
   };
@@ -299,16 +308,15 @@ export default function DiariaTicket({ navigation, route }) {
   );
 
   const sendWhatsApp = (phone, message) => {
-    const url = `whatsapp://send?phone=${phone}&text=${encodeURIComponent(
-      message
-    )}`;
+    const url = `https://wa.me/?text=${encodeURIComponent(message)}`;
+
     Linking.openURL(url).catch(() =>
       alert('Make sure WhatsApp is installed on your device')
     );
   };
 
   const sendSMS = (phone, message) => {
-    const url = `sms:${phone}?body=${encodeURIComponent(message)}`;
+    const url = `sms:?body=${encodeURIComponent(message)}`;
     Linking.openURL(url).catch(() => alert('Could not open SMS app'));
   };
 

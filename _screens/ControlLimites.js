@@ -1,8 +1,6 @@
 import {
   View,
   Text,
-  RefreshControl,
-  Dimensions,
   StyleSheet,
   SafeAreaView,
   TouchableOpacity,
