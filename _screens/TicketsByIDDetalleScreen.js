@@ -1,5 +1,11 @@
 import { useCallback, useContext, useEffect, useState } from 'react';
-import { View, Text, TouchableOpacity, SafeAreaView } from 'react-native';
+import {
+  View,
+  Text,
+  TouchableOpacity,
+  SafeAreaView,
+  StyleSheet,
+} from 'react-native';
 import Icon from 'react-native-vector-icons/Ionicons';
 import { getDetalleByTicketId } from '../database/DiariaModel';
 import { message, styles } from '../constants';
@@ -52,52 +58,56 @@ export default function TicketsByIDDetalleScreen({ navigation, route }) {
   }, [navigation, ticketId, countTicketDetail]);
 
   const renderItem = ({ item }) => (
-    <View style={styles.cardRowDetalle}>
-      <View style={styles.cardContentDetalle}>
-        <Text style={styles.bigNumberDetalle}>
-          {item.number.toString().padStart(2, '0')}
-        </Text>
-        <Text style={styles.lempirasDetalle}>
-          Lps.{' '}
-          {item.lempiras.toLocaleString('en-HN', {
-            minimumFractionDigits: 2,
-            maximumFractionDigits: 2,
-          })}
-        </Text>
-      </View>
+    <View style={stylesLocal.card}>
+      <Text style={stylesLocal.number}>
+        {item.number.toString().padStart(2, '0')}
+      </Text>
+      <Text style={stylesLocal.amount}>
+        L.{' '}
+        {item.lempiras.toLocaleString('en-HN', {
+          minimumFractionDigits: 2,
+          maximumFractionDigits: 2,
+        })}
+      </Text>
     </View>
   );
 
   return (
-    <SafeAreaView
-      style={{ height: '100%', top: 1, backgroundColor: '#d7d7d7' }}
-    >
-      <View style={{ width: '100%' }}>
-        <Text
-          style={{
-            textAlign: 'center',
-            paddingVertical: 10,
-            backgroundColor: '#2d2b2d',
-            color: 'white',
-            fontSize: 22,
-            fontWeight: 'bold',
-          }}
-        >
-          Total: L.
-          {total_lempiras.toLocaleString('en-HN', {
-            minimumFractionDigits: 2,
-            maximumFractionDigits: 2,
-          })}
-        </Text>
-      </View>
-      <View>
-        <FlatList
-          data={detalleList}
-          keyExtractor={(item) => item.id.toString()}
-          renderItem={renderItem}
-          contentContainerStyle={{ padding: 10, paddingBottom: 120 }}
-        />
-      </View>
+    <SafeAreaView style={stylesLocal.container}>
+      <FlatList
+        data={detalleList}
+        keyExtractor={(item) => item.number.toString()}
+        numColumns={3}
+        renderItem={renderItem}
+        contentContainerStyle={stylesLocal.list}
+      />
     </SafeAreaView>
   );
 }
+const stylesLocal = StyleSheet.create({
+  container: {
+    flex: 1,
+    backgroundColor: '#d7d7d7',
+  },
+  list: {
+    padding: 10,
+  },
+  card: {
+    flex: 1,
+    backgroundColor: '#fff',
+    margin: 5,
+    padding: 15,
+    borderRadius: 10,
+    alignItems: 'center',
+  },
+  number: {
+    fontSize: 20,
+    fontWeight: 'bold',
+    color: '#333',
+  },
+  amount: {
+    fontSize: 16,
+    color: '#488aff',
+    marginTop: 5,
+  },
+});

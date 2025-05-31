@@ -8,19 +8,20 @@ import {
   TouchableOpacity,
 } from 'react-native';
 import { getDraftTickets } from '../database/DiariaModel';
-import { useFocusEffect, useNavigation } from '@react-navigation/native';
+import { useFocusEffect } from '@react-navigation/native';
 import Icon from 'react-native-vector-icons/Ionicons';
-const TicketsScreen = () => {
+const TicketsScreen = ({ navigation }) => {
   const [tickets, setTickets] = useState([]);
   const [closure_id, setClosure_id] = useState(0);
-  const navigation = useNavigation(); // 🔁 use navigation
   const [total_lempiras, setTotal_lempiras] = useState(0);
+  const [closure_date, setClosure_date] = useState();
 
   const fetchDraftTickets = async () => {
     const ptickets = await getDraftTickets();
     setClosure_id(ptickets.closure_id);
     setTickets(ptickets.tickets);
     setTotal_lempiras(ptickets.sumTotal);
+    setClosure_date(ptickets.closure_date);
   };
 
   useFocusEffect(
@@ -28,6 +29,25 @@ const TicketsScreen = () => {
       fetchDraftTickets();
     }, [])
   );
+
+  useEffect(() => {
+    navigation.setOptions({
+      headerRight: () =>
+        true ? (
+          <View
+            style={{
+              flexDirection: 'row',
+              alignItems: 'center',
+              justifyContent: 'space-between',
+            }}
+          >
+            <Text style={{ paddingRight: 15, color: 'white' }}>
+              {closure_date}
+            </Text>
+          </View>
+        ) : null,
+    });
+  }, [closure_date]);
 
   const renderItem = ({ item }) => (
     <TouchableOpacity
@@ -96,27 +116,31 @@ const TicketsScreen = () => {
         <View>
           <Text
             style={{
-              backgroundColor: 'white',
+              color: 'white',
               fontSize: 20,
               fontWeight: 'bold',
               with: '100%',
               paddingHorizontal: 8,
-              marginBottom: 1,
+              // marginBottom: 1,
               paddingVertical: 4,
               marginLeft: 4,
+              borderColor: 'white',
+              borderWidth: 1,
             }}
           >
             {'Cierre: # ' + closure_id + ''}
           </Text>
           <Text
             style={{
-              backgroundColor: 'white',
+              color: 'white',
               fontSize: 20,
               fontWeight: 'bold',
               with: '100%',
               paddingHorizontal: 8,
               paddingVertical: 4,
               marginLeft: 4,
+              borderColor: 'white',
+              borderWidth: 1,
             }}
           >
             {'Cant: (' + tickets.length + ')'}
@@ -146,7 +170,18 @@ const TicketsScreen = () => {
         keyExtractor={(item) => item.id.toString()}
         renderItem={renderItem}
         contentContainerStyle={{ paddingBottom: 35 }}
-        ListEmptyComponent={<Text>No hay tickets en proceso.</Text>}
+        ListEmptyComponent={
+          <Text
+            style={{
+              width: '100%',
+              textAlign: 'center',
+              padding: 30,
+              fontSize: 17,
+            }}
+          >
+            No hay tickets en proceso.
+          </Text>
+        }
       />
     </View>
   );

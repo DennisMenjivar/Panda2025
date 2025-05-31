@@ -10,6 +10,7 @@ import Toast from 'react-native-toast-message';
 import { toastConfig } from './constants';
 import TicketsScreen from './_screens/TicketsScreen';
 import TicketsByIDDetalleScreen from './_screens/TicketsByIDDetalleScreen';
+import ConsolidatedScreen from './_screens/ConsolidatedScreen';
 
 function NotificationsScreen({ navigation }) {
   return (
@@ -75,7 +76,7 @@ export default function App() {
               ),
             }}
             name="Consolidado"
-            component={NotificationsScreen}
+            component={ConsolidatedScreen}
           />
           <Drawer.Screen
             options={{

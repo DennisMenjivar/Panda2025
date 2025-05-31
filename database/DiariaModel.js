@@ -263,9 +263,9 @@ export const getDraftTickets = async () => {
   const db = await getDBConnection();
 
   try {
-    // 1️⃣ Get the open closure (status = 0)
+    // 1️⃣ Get the open closure (status = 0) and its date
     const [closureResult] = await db.executeSql(
-      `SELECT id FROM closure WHERE status = 0 LIMIT 1`
+      `SELECT id, date FROM closure WHERE status = 0 LIMIT 1`
     );
 
     if (closureResult.rows.length === 0) {
@@ -274,9 +274,18 @@ export const getDraftTickets = async () => {
     }
 
     const closureId = closureResult.rows.item(0).id;
-    console.log('closureId: ', closureId);
+    const rawDate = closureResult.rows.item(0).date;
 
-    // 2️⃣ Get tickets with that closure_id and status = 0
+    // 🗓️ Format date to DD-MM-YYYY
+    const formattedDate = new Date(rawDate)
+      .toLocaleDateString('es-HN', {
+        day: '2-digit',
+        month: '2-digit',
+        year: 'numeric',
+      })
+      .replace(/\//g, '-');
+
+    // 2️⃣ Get tickets with that closure_id and status = 1
     const [ticketResult] = await db.executeSql(
       `SELECT id, total_lempiras, status, created_at, closure_id 
        FROM diaria_ticket 
@@ -288,11 +297,17 @@ export const getDraftTickets = async () => {
     const tickets = [];
     let sumTotal = 0;
     for (let i = 0; i < ticketResult.rows.length; i++) {
-      sumTotal += ticketResult.rows.item(i).total_lempiras;
-      tickets.push(ticketResult.rows.item(i));
+      const ticket = ticketResult.rows.item(i);
+      sumTotal += ticket.total_lempiras;
+      tickets.push(ticket);
     }
 
-    return { tickets: tickets, closure_id: closureId, sumTotal };
+    return {
+      tickets,
+      closure_id: closureId,
+      closure_date: formattedDate,
+      sumTotal,
+    };
   } catch (error) {
     console.error('❌ Error getting tickets from open closure:', error);
     return {};
@@ -697,6 +712,75 @@ export const finalizeTicket = async (ticketId, navigation) => {
     console.error('❌ Error finalizando ticket:', error);
     alert('❌ No se pudo finalizar el ticket.');
     return 0;
+  }
+};
+
+export const getSumLempirasByNumber = async () => {
+  const db = await getDBConnection();
+  try {
+    // 1. Get current open closure
+    const [closureResult] = await db.executeSql(
+      'SELECT id, date FROM closure WHERE status = 0 LIMIT 1'
+    );
+    if (closureResult.rows.length === 0) return { numbers: [], total: 0 };
+
+    const closureId = closureResult.rows.item(0).id;
+    const date = closureResult.rows.item(0).date;
+
+    // 2. Get ticket IDs under that closure
+    const [ticketsResult] = await db.executeSql(
+      'SELECT id FROM diaria_ticket WHERE closure_id = ?',
+      [closureId]
+    );
+
+    if (ticketsResult.rows.length === 0)
+      return { numbers: [], total: 0, date: null, closureId: null };
+
+    const ticketIds = [];
+    for (let i = 0; i < ticketsResult.rows.length; i++) {
+      ticketIds.push(ticketsResult.rows.item(i).id);
+    }
+
+    // 3. Get lempiras sum per number only for saved numbers
+    const placeholders = ticketIds.map(() => '?').join(',');
+    const [sumsResult] = await db.executeSql(
+      `SELECT number, SUM(lempiras) as total 
+       FROM diaria_detalle 
+       WHERE ticket_id IN (${placeholders}) 
+       GROUP BY number`,
+      ticketIds
+    );
+
+    const result = [];
+    let totalLempiras = 0;
+
+    for (let i = 0; i < sumsResult.rows.length; i++) {
+      const row = sumsResult.rows.item(i);
+      result.push({
+        number: row.number,
+        lempiras: row.total,
+      });
+      totalLempiras += row.total;
+    }
+
+    // 🗓️ Format date to DD-MM-YYYY
+    const formattedDate = new Date(date)
+      .toLocaleDateString('es-HN', {
+        day: '2-digit',
+        month: '2-digit',
+        year: 'numeric',
+      })
+      .replace(/\//g, '/');
+
+    return {
+      numbers: result,
+      total: totalLempiras,
+      date: formattedDate,
+      closureId,
+    };
+  } catch (error) {
+    console.error('❌ Error getting saved numbers:', error);
+    return { numbers: [], total: 0, date: null, closureId: null };
   }
 };
 
