@@ -88,7 +88,7 @@ export default function App() {
                 />
               ),
             }}
-            name="Control limites"
+            name="Control límites"
             component={ControlLimites}
           />
           <Drawer.Screen
